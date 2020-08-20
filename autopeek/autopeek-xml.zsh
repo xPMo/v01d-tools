@@ -92,7 +92,7 @@ ports=(${(@s[,])${ports:#-?*}})
 ports=(${(uon)ports})
 
 # Call nmap
-debug 2 "Calling %Bnmap%b with port(s) %F{green}${(j[,])ports:-80,443,8080,8443}%f"
+debug 2 "Calling %Bnmap%b on %F{magenta}$*%f with port(s) %F{green}${(j[,])ports:-80,443,8080,8443}%f"
 debug 1 "${(@f)"$(
 	umask 022
 	${sudo:+sudo} nmap -A -Pn -n --open -oA "$dir/$scan" \
