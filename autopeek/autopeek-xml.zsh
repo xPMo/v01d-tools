@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-setopt extendedglob
+setopt extendedglob multios
 
 debug(){
 	((verbosity < $1)) && return 0
@@ -82,9 +82,16 @@ integer verbosity="1+${#flagv}-${#flagq}"
 # Directory
 dir=${dir[-1]:-'.'}
 if ! mkdir -p "$dir/images"; then
-	debug -1 "Could not create directory $dir/images"
+	debug -1 "Could not create directory $dir/images."
 	exit 1
 fi
+
+# Create files beforehand in case we are running nmap with sudo
+if ! : > "$dir/scan".{gnmap,nmap,xml}; then
+	debug -1 "Could not create files in $dir."
+	exit 1
+fi
+
 report=$dir/report.html
 
 # Ports: avoid duplicates
@@ -94,8 +101,7 @@ ports=(${(uon)ports})
 # Call nmap
 debug 2 "Calling %Bnmap%b on %F{magenta}$*%f with port(s) %F{green}${(j[,])ports:-80,443,8080,8443}%f"
 debug 1 "${(@f)"$(
-	umask 022
-	${sudo:+sudo} nmap -A -Pn -n --open -oA "$dir/$scan" \
+	${sudo:+sudo} nmap -A -Pn -n --open -oA "$dir/scan" \
 	-p${(j[,])ports:-80,443,8080,8443} -- "$@"
 )"//(#m)[\\%]/$MATCH$MATCH}" # escape backslash and percent for print -P
 
@@ -132,7 +138,7 @@ done < <(
 # Get open ports from scan: [service name]:[addr]:[port]
 xmlstarlet sel -T -t -m "//port/state[@state='open']/.." \
 	-v service/@name -o ':' -v ../../address/@addr -o ':' -v @portid --nl \
-	< "$dir/$scan.xml"
+	< "$dir/scan.xml"
 )
 
 # Get exit codes from cutycapt
