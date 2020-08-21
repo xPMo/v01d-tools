@@ -64,7 +64,10 @@ set -- "${@[0,end_opts-1]}" "${@[end_opts+1,-1]}"
 
 # help
 (($#help)) && help 0
-(($#)) || help 1
+if (($#)); then
+	debug -1 "No host(s) provided."
+	help 1
+fi
 
 # Check installed programs
 for prog (
