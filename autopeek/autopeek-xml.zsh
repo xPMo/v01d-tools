@@ -17,14 +17,14 @@ debug(){
 
 help(){
 	print -u$(($1 + 1)) \
-"Usage: $ZSH_ARGZERO [ options ] [ host ... ]
+"Usage: $ZSH_ARGZERO [options] [-|-- nmap_options host ...]
 
 Options:
 	--help         -h        Show this help
 	--view         -V        View report in browser
 	--dir DIR      -d DIR    Directory to save scan to (default: PWD)
 	--ports PORTS  -p PORTS  Specify the ports to scan (default: 80,8080,443,8443)
-	--timeout SEC  -t SEC    Set timeout (default: 10)
+	--timeout SEC  -t SEC    Set timeout for CutyCapt  (default: 10)
 	--force        -f        Consider all open ports as http(s)
 	--sudo         -S        Run nmap with sudo (for OS detection)
 	--verbose      -v        Increase verbosity
@@ -79,20 +79,22 @@ fi
 
 integer verbosity="1+${#flagv}-${#flagq}"
 
-# Directory
+# Filenames
 dir=${dir[-1]:-'.'}
-if ! mkdir -p "$dir/images"; then
-	debug -1 "Could not create directory $dir/images."
+scan=${(%)scan[-1]:-$dir/scan_%D{%F_%T}}
+report=$dir/report.html
+
+# Directory
+if ! mkdir -p "$dir/images" "${scan:h}"; then
+	debug -1 "Could not create directories."
 	exit 1
 fi
 
 # Create files beforehand in case we are running nmap with sudo
-if ! : > "$dir/scan".{gnmap,nmap,xml}; then
+if ! : > "$scan".{gnmap,nmap,xml}; then
 	debug -1 "Could not create files in $dir."
 	exit 1
 fi
-
-report=$dir/report.html
 
 # Ports: avoid duplicates
 ports=(${(@s[,])${ports:#-?*}})
@@ -101,8 +103,8 @@ ports=(${(uon)ports})
 # Call nmap
 debug 2 "Calling %Bnmap%b on %F{magenta}$*%f with port(s) %F{green}${(j[,])ports:-80,443,8080,8443}%f"
 debug 1 "${(@f)"$(
-	${sudo:+sudo} nmap -A -Pn -n --open -oA "$dir/scan" \
-	-p${(j[,])ports:-80,443,8080,8443} -- "$@"
+	${sudo:+sudo} nmap -A -Pn -n --open -oA "$scan" \
+	-p${(j[,])ports:-80,443,8080,8443} "$@"
 )"//(#m)[\\%]/$MATCH$MATCH}" # escape backslash and percent for print -P
 
 
@@ -138,7 +140,7 @@ done < <(
 # Get open ports from scan: [service name]:[addr]:[port]
 xmlstarlet sel -T -t -m "//port/state[@state='open']/.." \
 	-v service/@name -o ':' -v ../../address/@addr -o ':' -v @portid --nl \
-	< "$dir/scan.xml"
+	< "$scan.xml"
 )
 
 # Get exit codes from cutycapt
