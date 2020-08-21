@@ -16,7 +16,7 @@ debug(){
 }
 
 help(){
-	print -u$(($1 + 1)) \
+	print -u2 \
 "Usage: $ZSH_ARGZERO [options] [-|-- nmap_options host ...]
 
 Options:
@@ -73,7 +73,7 @@ for prog (
 	xdg-open
 	xmlstarlet
 ) if ! (($+commands[(i)$~prog])); then
-		debug -1 "Unable to find $prog."
+		debug -1 "Unable to find %F{yellow}$prog%f. Is it installed?"
 		exit 1
 fi
 
@@ -91,8 +91,9 @@ if ! mkdir -p "$dir/images" "${scan:h}"; then
 fi
 
 # Create files beforehand in case we are running nmap with sudo
+debug 3 "Creating scan logs at %F{yellow}${scan//(#m)[\\%]/$MATCH$MATCH}.{gnmap,nmap,xml}.%f"
 if ! : > "$scan".{gnmap,nmap,xml}; then
-	debug -1 "Could not create files in $dir."
+	debug -1 "Could not create files in %F{yellow}$dir%f."
 	exit 1
 fi
 
@@ -137,10 +138,10 @@ while read -r remote; do
 			;;
 	esac
 done < <(
-# Get open ports from scan: [service name]:[addr]:[port]
-xmlstarlet sel -T -t -m "//port/state[@state='open']/.." \
-	-v service/@name -o ':' -v ../../address/@addr -o ':' -v @portid --nl \
-	< "$scan.xml"
+	# Get open ports from scan: [service name]:[addr]:[port]
+	xmlstarlet sel -T -t -m "//port/state[@state='open']/.." \
+		-v service/@name -o ':' -v ../../address/@addr -o ':' -v @portid --nl \
+		< "$scan.xml"
 )
 
 # Get exit codes from cutycapt
