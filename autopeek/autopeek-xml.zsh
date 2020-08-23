@@ -177,7 +177,7 @@ debug 2 'Writing report...'
 
 if (($#view)); then
 	debug 2 'Opening report...'
-	xdg-open $report
+	xdg-open ${report:a}
 fi
 
 if ((failed)); then
