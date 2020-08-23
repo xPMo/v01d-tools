@@ -15,20 +15,31 @@ debug(){
 	print -u2 -l -P "$pfx ${^@}"
 }
 
+# Default nmap options:
+nmap=(nmap -A -Pn -n --open -oA)
+
 help(){
-	print -u2 \
-"Usage: $ZSH_ARGZERO [options] [-|-- nmap_options host ...]
+	print -u2 -P \
+"Usage: $ZSH_ARGZERO [options] [[-|-- nmap_options] host ...]
+
+Calls nmap on the given hosts to identify webservers. Then uses CutyCapt to take
+a preview screenshot of each web service found. Finally, embeds the images in an
+html document and (optionally) opens a web browser to view the previews.
 
 Options:
 	--help         -h        Show this help
 	--view         -V        View report in browser
-	--dir DIR      -d DIR    Directory to save scan to (default: PWD)
+	--dir DIR      -d DIR    Directory to save files to (default: .)
 	--ports PORTS  -p PORTS  Specify the ports to scan (default: 80,8080,443,8443)
 	--timeout SEC  -t SEC    Set timeout for CutyCapt  (default: 10)
 	--force        -f        Consider all open ports as http(s)
 	--sudo         -S        Run nmap with sudo (for OS detection)
 	--verbose      -v        Increase verbosity
 	--quiet        -q        Decrease verbosity
+
+Nmap default options:
+
+	%F{yellow}${(j[ ])nmap}%f
 "
 	exit $1
 }
@@ -49,6 +60,7 @@ zmodload zsh/files
 zparseopts -D -E -F - \
 	h=help -help=help \
 	d:=dir -dir:=dir \
+	scan:=scan \
 	p+:=ports -ports+:=ports \
 	t:=timeout -timeout:=timeout \
 	V=view -view=view \
@@ -107,7 +119,7 @@ ports=(${(uon)ports})
 # Call nmap
 debug 2 "Calling %Bnmap%b on %F{magenta}$*%f with port(s) %F{green}${(j[,])ports:-80,443,8080,8443}%f"
 debug 1 "${(@f)"$(
-	${sudo:+sudo} nmap -A -Pn -n --open -oA "$scan" \
+	${sudo:+sudo} $nmap "$scan" \
 	-p${(j[,])ports:-80,443,8080,8443} "$@"
 )"//(#m)[\\%]/$MATCH$MATCH}" # escape backslash and percent for print -P
 
