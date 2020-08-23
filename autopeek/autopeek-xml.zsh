@@ -76,7 +76,7 @@ set -- "${@[0,end_opts-1]}" "${@[end_opts+1,-1]}"
 
 # help
 (($#help)) && help 0
-if (($#)); then
+if ! (($#)); then
 	debug -1 "No host(s) provided."
 	help 1
 fi
